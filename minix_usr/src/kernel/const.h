@@ -105,13 +105,13 @@
 
 /* p_reg contains: d0-d7, a0-a6,   in that order. */
 #define NR_REGS           15	/* number of general regs in each proc slot */
- 
+
 #define TRACEBIT      0x8000	/* or this with psw in proc[] for tracing */
 #define SETPSW(rp, new)		/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xFF | (new) & 0xFF)
- 
+
 #define MEM_BYTES  0xffffffff	/* memory size for /dev/mem */
- 
+
 #ifdef __ACK__
 #define FSTRUCOPY
 #endif
@@ -122,7 +122,8 @@
 #define TASK_Q             0	/* ready tasks are scheduled via queue 0 */
 #define SERVER_Q           1	/* ready servers are scheduled via queue 1 */
 #define USER_Q             2	/* ready users are scheduled via queue 2 */
-#define NQ                 3	/* # of scheduling queues */
+#define OBL_Q              3    /*kolejka procesow obliczeniowych*/
+#define NQ                 4	/* # of scheduling queues */
 
 /* Env_parse() return values. */
 #define EP_UNSET	0	/* variable not set */

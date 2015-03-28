@@ -8,6 +8,9 @@
  * 'proc', be sure to change sconst.h to match.
  */
 
+#define ZWYKLY 0
+#define OBLICZENIOWY 1
+
 struct proc {
   struct stackframe_s p_reg;	/* process' registers saved in stack frame */
 
@@ -58,6 +61,8 @@ struct proc {
   unsigned p_pendcount;		/* count of pending and unfinished signals */
 
   char p_name[16];		/* name of the process */
+
+  int typ_procesu;
 };
 
 /* Guard word for task stacks. */
@@ -110,5 +115,8 @@ EXTERN struct proc *pproc_addr[NR_TASKS + NR_PROCS];
 EXTERN struct proc *bill_ptr;	/* ptr to process to bill for clock ticks */
 EXTERN struct proc *rdy_head[NQ];	/* pointers to ready list headers */
 EXTERN struct proc *rdy_tail[NQ];	/* pointers to ready list tails */
+/*zmiany stalych w const.h, mo¿na by te zmainy zrobic tutaj,
+ale zeby nie robic syfu trzymam sie dotychczasowej konwencji*/
+EXTERN int stan_szeregowania;
 
 #endif /* PROC_H */

@@ -46,7 +46,7 @@ FORWARD _PROTOTYPE( void cp_mess, (int src, struct proc *src_p, message *src_m,
 #endif
 
 /*===========================================================================*
- *				interrupt				     * 
+ *				interrupt				     *
  *===========================================================================*/
 PUBLIC void interrupt(task)
 int task;			/* number of task to be started */
@@ -116,7 +116,7 @@ int task;			/* number of task to be started */
 }
 
 /*===========================================================================*
- *				sys_call				     * 
+ *				sys_call				     *
  *===========================================================================*/
 PUBLIC int sys_call(function, src_dest, m_ptr)
 int function;			/* SEND, RECEIVE, or BOTH */
@@ -137,7 +137,7 @@ message *m_ptr;			/* pointer to message */
   rp = proc_ptr;
 
   if (isuserp(rp) && function != BOTH) return(E_NO_PERM);
-  
+
   /* The parameters are ok. Do the call. */
   if (function & SEND) {
 	/* Function = SEND or BOTH. */
@@ -153,7 +153,7 @@ message *m_ptr;			/* pointer to message */
 }
 
 /*===========================================================================*
- *				mini_send				     * 
+ *				mini_send				     *
  *===========================================================================*/
 PRIVATE int mini_send(caller_ptr, dest, m_ptr)
 register struct proc *caller_ptr;	/* who is trying to send a message? */
@@ -175,7 +175,7 @@ message *m_ptr;			/* pointer to message buffer */
   if (isemptyp(dest_ptr)) return(E_BAD_DEST);	/* dead dest */
 
 #if ALLOW_GAP_MESSAGES
-  /* This check allows a message to be anywhere in data or stack or gap. 
+  /* This check allows a message to be anywhere in data or stack or gap.
    * It will have to be made more elaborate later for machines which
    * don't have the gap mapped.
    */
@@ -184,7 +184,7 @@ message *m_ptr;			/* pointer to message buffer */
   vhi = (vb + MESS_SIZE - 1) >> CLICK_SHIFT;	/* vir click for top of msg */
   if (vlo < caller_ptr->p_map[D].mem_vir || vlo > vhi ||
       vhi >= caller_ptr->p_map[S].mem_vir + caller_ptr->p_map[S].mem_len)
-        return(EFAULT); 
+        return(EFAULT);
 #else
   /* Check for messages wrapping around top of memory or outside data seg. */
   vb = (vir_bytes) m_ptr;
@@ -237,7 +237,7 @@ message *m_ptr;			/* pointer to message buffer */
 }
 
 /*===========================================================================*
- *				mini_rec				     * 
+ *				mini_rec				     *
  *===========================================================================*/
 PRIVATE int mini_rec(caller_ptr, src, m_ptr)
 register struct proc *caller_ptr;	/* process trying to get message */
@@ -247,7 +247,7 @@ message *m_ptr;			/* pointer to message buffer */
 /* A process or task wants to get a message.  If one is already queued,
  * acquire it and deblock the sender.  If no message from the desired source
  * is available, block the caller.  No need to check parameters for validity.
- * Users calls are always sendrec(), and mini_send() has checked already.  
+ * Users calls are always sendrec(), and mini_send() has checked already.
  * Calls from the tasks, MM, and FS are trusted.
  */
 
@@ -297,7 +297,7 @@ message *m_ptr;			/* pointer to message buffer */
 }
 
 /*===========================================================================*
- *				pick_proc				     * 
+ *				pick_proc				     *
  *===========================================================================*/
 PRIVATE void pick_proc()
 {
@@ -316,11 +316,41 @@ PRIVATE void pick_proc()
 	proc_ptr = rp;
 	return;
   }
-  if ( (rp = rdy_head[USER_Q]) != NIL_PROC) {
-	proc_ptr = rp;
-	bill_ptr = rp;
-	return;
-  }
+    if(stan_szeregowania>2)/*poprzednio byl obliczeniowy*/
+    {
+        if ( (rp = rdy_head[USER_Q]) != NIL_PROC )
+        {
+            proc_ptr = rp;
+            bill_ptr = rp;
+            stan_szeregowania=1;/*wybralismy zwykly*/
+            return;
+        }
+        if ( (rp = rdy_head[OBL_Q]) != NIL_PROC )
+        {
+            proc_ptr = rp;
+            bill_ptr = rp;
+            stan_szeregowania=3;/*wybralismy obliczeniowy*/
+            return;
+        }
+    }
+    else
+    {
+        if ( (rp = rdy_head[OBL_Q]) != NIL_PROC && stan_szeregowania==2)
+        {
+            proc_ptr = rp;
+            bill_ptr = rp;
+            stan_szeregowania=3;/*wybralismy obliczeniowy*/
+            return;
+        }
+        if ( (rp = rdy_head[USER_Q]) != NIL_PROC )
+        {
+            proc_ptr = rp;
+            bill_ptr = rp;
+            ++stan_szeregowania;/*wybralismy zwykly*/
+            return;
+        }
+    }
+
   /* No one is ready.  Run the idle task.  The idle task might be made an
    * always-ready user task to avoid this special case.
    */
@@ -328,7 +358,7 @@ PRIVATE void pick_proc()
 }
 
 /*===========================================================================*
- *				ready					     * 
+ *				ready					     *
  *===========================================================================*/
 PRIVATE void ready(rp)
 register struct proc *rp;	/* this process is now runnable */
@@ -364,14 +394,24 @@ register struct proc *rp;	/* this process is now runnable */
   /* Add user process to the front of the queue.  (Is a bit fairer to I/O
    * bound processes.)
    */
-  if (rdy_head[USER_Q] == NIL_PROC)
-	rdy_tail[USER_Q] = rp;
-  rp->p_nextready = rdy_head[USER_Q];
-  rdy_head[USER_Q] = rp;
+    if(rp->typ_procesu==OBLICZENIOWY)
+    {
+        if (rdy_head[OBL_Q] == NIL_PROC)
+            rdy_tail[OBL_Q] = rp;
+        rp->p_nextready = rdy_head[OBL_Q];
+        rdy_head[OBL_Q] = rp;
+    }
+    else
+    {
+        if (rdy_head[USER_Q] == NIL_PROC)
+            rdy_tail[USER_Q] = rp;
+        rp->p_nextready = rdy_head[USER_Q];
+        rdy_head[USER_Q] = rp;
+    }
 }
 
 /*===========================================================================*
- *				unready					     * 
+ *				unready					     *
  *===========================================================================*/
 PRIVATE void unready(rp)
 register struct proc *rp;	/* this process is no longer runnable */
@@ -406,18 +446,37 @@ register struct proc *rp;	/* this process is no longer runnable */
 		return;
 	}
 	qtail = &rdy_tail[SERVER_Q];
-  } else {
-	if ( (xp = rdy_head[USER_Q]) == NIL_PROC) return;
-	if (xp == rp) {
-		rdy_head[USER_Q] = xp->p_nextready;
-#if (CHIP == M68000)
-		if (rp == proc_ptr)
-#endif
-		pick_proc();
-		return;
-	}
-	qtail = &rdy_tail[USER_Q];
   }
+    else if(rp->typ_procesu==ZWYKLY)
+    {
+        if ( (xp = rdy_head[USER_Q]) == NIL_PROC)
+            return;
+        if (xp == rp)
+        {
+            rdy_head[USER_Q] = xp->p_nextready;
+#if (CHIP == M68000)
+            if (rp == proc_ptr)
+#endif
+                pick_proc();
+            return;
+        }
+        qtail = &rdy_tail[USER_Q];
+    }
+    else if(rp->typ_procesu==OBLICZENIOWY)
+    {
+        if ( (xp = rdy_head[OBL_Q]) == NIL_PROC)
+            return;
+        if (xp == rp)
+        {
+            rdy_head[OBL_Q] = xp->p_nextready;
+#if (CHIP == M68000)
+            if (rp == proc_ptr)
+#endif
+                pick_proc();
+            return;
+        }
+        qtail = &rdy_tail[OBL_Q];
+    }
 
   /* Search body of queue.  A process can be made unready even if it is
    * not running by being sent a signal that kills it.
@@ -429,7 +488,7 @@ register struct proc *rp;	/* this process is no longer runnable */
 }
 
 /*===========================================================================*
- *				sched					     * 
+ *				sched					     *
  *===========================================================================*/
 PRIVATE void sched()
 {
@@ -438,14 +497,28 @@ PRIVATE void sched()
  * possibly promoting another user to head of the queue.
  */
 
-  if (rdy_head[USER_Q] == NIL_PROC) return;
+    if (rdy_head[USER_Q] == NIL_PROC)
+    {
+        if(rdy_head[OBL_Q] == NIL_PROC)
+            return;
+    }
 
   /* One or more user processes queued. */
-  rdy_tail[USER_Q]->p_nextready = rdy_head[USER_Q];
-  rdy_tail[USER_Q] = rdy_head[USER_Q];
-  rdy_head[USER_Q] = rdy_head[USER_Q]->p_nextready;
-  rdy_tail[USER_Q]->p_nextready = NIL_PROC;
-  pick_proc();
+    if(stan_szeregowania<=2)
+    {
+        rdy_tail[USER_Q]->p_nextready = rdy_head[USER_Q];
+        rdy_tail[USER_Q] = rdy_head[USER_Q];
+        rdy_head[USER_Q] = rdy_head[USER_Q]->p_nextready;
+        rdy_tail[USER_Q]->p_nextready = NIL_PROC;
+    }
+    else
+    {
+        rdy_tail[OBL_Q]->p_nextready = rdy_head[OBL_Q];
+        rdy_tail[OBL_Q] = rdy_head[OBL_Q];
+        rdy_head[OBL_Q] = rdy_head[OBL_Q]->p_nextready;
+        rdy_tail[OBL_Q]->p_nextready = NIL_PROC;
+    }
+    pick_proc();
 }
 
 /*==========================================================================*
@@ -553,7 +626,7 @@ message *dst_m;			/* destination buffer */
 {
   /* convert virtual address to physical address */
   /* The caller has already checked if all addresses are within bounds */
-  
+
   src_m = (message *)((char *)src_m + (((phys_bytes)src_p->p_map[D].mem_phys
 				- src_p->p_map[D].mem_vir) << CLICK_SHIFT));
   dst_m = (message *)((char *)dst_m + (((phys_bytes)dst_p->p_map[D].mem_phys

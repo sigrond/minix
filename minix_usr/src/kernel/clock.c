@@ -182,11 +182,21 @@ PRIVATE void do_clocktick()
   }
 
   /* If a user process has been running too long, pick another one. */
-  if (--sched_ticks == 0) {
-	if (bill_ptr == prev_ptr) lock_sched();	/* process has run too long */
-	sched_ticks = SCHED_RATE;		/* reset quantum */
-	prev_ptr = bill_ptr;			/* new previous process */
-  }
+    if (--sched_ticks == 0)
+    {
+        if(stan_szeregowania==3)
+        {
+            sched_ticks = SCHED_RATE;  /*drugi kwant czasu*/
+            ++stan_szeregowania;
+        }
+        else
+        {
+            if (bill_ptr == prev_ptr)
+                lock_sched();	/* process has run too long */
+            sched_ticks = SCHED_RATE;		/* reset quantum */
+            prev_ptr = bill_ptr;			/* new previous process */
+        }
+    }
 }
 
 
@@ -468,16 +478,17 @@ int irq;
   if (next_alarm <= now ||
       sched_ticks == 1 &&
       bill_ptr == prev_ptr &&
-      rdy_head[USER_Q] != NIL_PROC) {
+      (rdy_head[USER_Q]!=NIL_PROC || rdy_head[OBL_Q]!=NIL_PROC)) {
 	interrupt(CLOCK);
 	return 1;	/* Reenable interrupts */
   }
 
-  if (--sched_ticks == 0) {
-	/* If bill_ptr == prev_ptr, no ready users so don't need sched(). */
-	sched_ticks = SCHED_RATE;	/* reset quantum */
-	prev_ptr = bill_ptr;		/* new previous process */
-  }
+    if (--sched_ticks == 0)
+    {
+        /* If bill_ptr == prev_ptr, no ready users so don't need sched(). */
+        sched_ticks = SCHED_RATE;	/* reset quantum */
+        prev_ptr = bill_ptr;		/* new previous process */
+    }
   return 1;	/* Reenable clock interrupt */
 }
 
