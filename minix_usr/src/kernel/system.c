@@ -146,6 +146,7 @@ FORWARD _PROTOTYPE( int do_getmap, (message *m_ptr) );
 FORWARD _PROTOTYPE( int do_sysctl, (message *m_ptr) );
 FORWARD _PROTOTYPE( int do_puts, (message *m_ptr) );
 FORWARD _PROTOTYPE( int do_findproc, (message *m_ptr) );
+FORWARD _PROTOTYPE( int do_nowy_obliczeniowy, (message *m_ptr) );
 
 
 /*===========================================================================*
@@ -181,6 +182,7 @@ PUBLIC void sys_task()
 	    case SYS_SYSCTL:	r = do_sysctl(&m);	break;
 	    case SYS_PUTS:	r = do_puts(&m);	break;
 	    case SYS_FINDPROC:	r = do_findproc(&m);	break;
+	    case SYS_NOWY_OBLICZENIOWY: r = do_nowy_obliczeniowy(&m);   break;
 	    default:		r = E_BAD_FCN;
 	}
 
@@ -1011,6 +1013,36 @@ message *m_ptr;			/* pointer to request message */
 	}
   }
   return(ESRCH);
+}
+
+/*===========================================================================*
+ *				do_nowy_obliczeniowy				     *
+ *===========================================================================*/
+PRIVATE int do_nowy_obliczeniowy(m_ptr)
+message *m_ptr;			/* pointer to request message */
+{
+    int I;
+    int pid=m_ptr->m1_i1;
+    struct proc* rp=NIL_PROC;
+	for(I = NR_TASKS; I < NR_TASKS + NR_PROCS; I++)
+    {
+        if(proc[I].p_pid == pid)
+		{
+		    rp = &proc[I];
+		    break;
+		}
+    }
+    if(rp==NIL_PROC)
+        return EINVAL;
+    if(is_proc_ready(rp))
+    {
+        lock_unready(rp);
+        rp->typ_procesu=OBLICZENIOWY;
+        lock_ready(rp);
+    }
+    else
+        rp->typ_procesu=OBLICZENIOWY;
+    return 1;
 }
 
 /*===========================================================================*

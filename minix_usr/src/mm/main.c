@@ -178,3 +178,9 @@ PRIVATE void mm_init()
 	close(mem);
   }
 }
+
+PUBLIC int do_nowy_obliczeniowy()
+{
+    message m=mm_in;
+    return _taskcall(SYSTASK, SYS_NOWY_OBLICZENIOWY, &m);
+}
