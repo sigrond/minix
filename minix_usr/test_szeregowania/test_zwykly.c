@@ -10,7 +10,7 @@ int main()
     mypid=getpid();
     printf("proces zwykly(%d)\n",mypid);
     j=1;
-    for(i=1;i<1000000000;i++)
+    for(i=1;i<100000000;i++)
     {
         j*=i;/*bedzie wielokrotny overflow, ale to nic nie szkodzi*/
     }

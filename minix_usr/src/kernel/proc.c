@@ -45,6 +45,29 @@ FORWARD _PROTOTYPE( void cp_mess, (int src, struct proc *src_p, message *src_m,
 	cp_mess(s,sp,sm,dp,dm)
 #endif
 
+
+PUBLIC unsigned short is_proc_ready(rp)
+struct proc * rp;
+{
+	struct proc * xp;
+	struct proc * xp2;
+	xp = rdy_head[USER_Q];
+	xp2 = rdy_head[OBL_Q];
+	while(xp != NIL_PROC)
+	{
+		if(xp == rp)
+			return 1;
+		xp = xp->p_nextready;
+	}
+	while(xp2 != NIL_PROC)
+	{
+		if(xp2 == rp)
+			return 1;
+		xp2 = xp2->p_nextready;
+	}
+	return 0;
+}
+
 /*===========================================================================*
  *				interrupt				     *
  *===========================================================================*/

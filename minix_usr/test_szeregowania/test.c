@@ -12,7 +12,7 @@ int main()
     result=setObliczeniowy(mypid);
     printf("proces obliczeniowy(%d): %d\n",mypid,result);
     j=1;
-    for(i=1;i<1000000000;i++)
+    for(i=1;i<100000000;i++)
     {
         j*=i;/*bedzie wielokrotny overflow, ale to nic nie szkodzi*/
     }
